@@ -1,0 +1,160 @@
+
+<script>
+/* ============================================================
+   Tagwerk — Datenmodell, Speicher, Datumsrechnung
+   Bei jeder Änderung FASSUNG hier UND in sw.js hochzählen.
+   ============================================================ */
+"use strict";
+
+const FASSUNG = "tagwerk-0.1.0";
+const SCHLÜSSEL = "tagwerk.daten.v1";
+
+const ARTEN = {
+  kraft:  {name:"Krafttraining",  kurz:"Kraft",   farbe:"var(--kraft)"},
+  lauf:   {name:"Laufen",         kurz:"Laufen",  farbe:"var(--lauf)"},
+  ba:     {name:"Bachelorarbeit", kurz:"BA",      farbe:"var(--ba)"},
+  privat: {name:"Uni & Privat",   kurz:"Privat",  farbe:"var(--privat)"}
+};
+const ART_FOLGE = ["kraft","lauf","ba","privat"];
+
+const WOCHENTAGE = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+const WT_KURZ    = ["So","Mo","Di","Mi","Do","Fr","Sa"];
+const MONATE = ["Januar","Februar","März","April","Mai","Juni",
+                "Juli","August","September","Oktober","November","Dezember"];
+
+const RPE_STUFEN = ["","sehr leicht","leicht","locker","moderat","etwas fordernd",
+                    "fordernd","hart","sehr hart","am Limit","maximal"];
+const ERH_STUFEN = ["","ausgelaugt","schlapp","müde","mäßig","okay",
+                    "solide","gut","sehr gut","top","voll erholt"];
+
+/* ---------- Zustand ---------- */
+let Daten = {eintraege:[], werte:{}, einst:{schema:"system"}};
+let Sicht = "tag";
+let Anker = null;          /* gewählter Tag, ISO */
+let WochenAnker = null;    /* Montag der gezeigten Woche */
+let MonatsAnker = null;    /* Erster des gezeigten Monats */
+
+/* ---------- Datum ---------- */
+function zwei(n){ return (n < 10 ? "0" : "") + n; }
+function iso(d){ return d.getFullYear() + "-" + zwei(d.getMonth()+1) + "-" + zwei(d.getDate()); }
+function ausIso(s){ const t = String(s).split("-"); return new Date(+t[0], +t[1]-1, +t[2]); }
+function heute(){ return iso(new Date()); }
+function plusTage(s, n){ const d = ausIso(s); d.setDate(d.getDate()+n); return iso(d); }
+function plusMonate(s, n){
+  const d = ausIso(s), tag = d.getDate();
+  d.setDate(1); d.setMonth(d.getMonth()+n);
+  const letzter = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+  d.setDate(Math.min(tag, letzter));
+  return iso(d);
+}
+function wochenstart(s){            /* Montag */
+  const d = ausIso(s), wt = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - wt);
+  return iso(d);
+}
+function monatsstart(s){ const d = ausIso(s); d.setDate(1); return iso(d); }
+function wochentag(s){ return ausIso(s).getDay(); }
+function kalenderwoche(s){
+  const d = ausIso(s);
+  d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
+  const ersterDo = new Date(d.getFullYear(), 0, 4);
+  ersterDo.setDate(ersterDo.getDate() + 3 - ((ersterDo.getDay() + 6) % 7));
+  return 1 + Math.round((d - ersterDo) / 604800000);
+}
+function deDatum(s, lang){
+  const d = ausIso(s);
+  return lang
+    ? WOCHENTAGE[d.getDay()] + ", " + d.getDate() + ". " + MONATE[d.getMonth()] + " " + d.getFullYear()
+    : zwei(d.getDate()) + "." + zwei(d.getMonth()+1) + "." + d.getFullYear();
+}
+
+/* ---------- Werkzeug ---------- */
+function kennung(){
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+function zahl(v){
+  if(v === null || v === undefined) return null;
+  const n = parseFloat(String(v).trim().replace(",", "."));
+  return isNaN(n) ? null : n;
+}
+function deZahl(n, stellen){
+  if(n === null || n === undefined) return "–";
+  return (stellen ? n.toFixed(stellen) : String(Math.round(n))).replace(".", ",");
+}
+function stups(muster){
+  try{ if(navigator.vibrate) navigator.vibrate(muster || 8); }catch(e){}
+}
+function el(id){ return document.getElementById(id); }
+function neu(tag, klasse, text){
+  const n = document.createElement(tag);
+  if(klasse) n.className = klasse;
+  if(text !== undefined) n.textContent = text;
+  return n;
+}
+
+/* ---------- Speicher ---------- */
+function laden(){
+  try{
+    const roh = localStorage.getItem(SCHLÜSSEL);
+    if(!roh) return;
+    const d = JSON.parse(roh);
+    if(Array.isArray(d.eintraege)) Daten.eintraege = d.eintraege;
+    if(d.werte && typeof d.werte === "object") Daten.werte = d.werte;
+    if(d.einst && typeof d.einst === "object") Object.assign(Daten.einst, d.einst);
+  }catch(e){ console.warn("Laden fehlgeschlagen", e); }
+}
+function sichern(){
+  try{
+    localStorage.setItem(SCHLÜSSEL, JSON.stringify(Daten));
+  }catch(e){
+    melden("Speichern fehlgeschlagen — Speicher voll?");
+  }
+}
+
+/* ---------- Einträge ---------- */
+function einträgeAm(datum){
+  return Daten.eintraege
+    .filter(e => e.datum === datum && !e.aufgabe)
+    .sort((a,b) => {
+      if(a.ganztags !== b.ganztags) return a.ganztags ? -1 : 1;
+      if(a.ganztags) return ART_FOLGE.indexOf(a.art) - ART_FOLGE.indexOf(b.art);
+      return String(a.von || "").localeCompare(String(b.von || ""));
+    });
+}
+function aufgaben(){
+  return Daten.eintraege
+    .filter(e => e.aufgabe)
+    .sort((a,b) => {
+      if(!!a.erledigt !== !!b.erledigt) return a.erledigt ? 1 : -1;
+      return ART_FOLGE.indexOf(a.art) - ART_FOLGE.indexOf(b.art);
+    });
+}
+function eintragNach(id){ return Daten.eintraege.find(e => e.id === id) || null; }
+
+function eintragSichern(e){
+  e.geaendert = Date.now();
+  const i = Daten.eintraege.findIndex(x => x.id === e.id);
+  if(i >= 0) Daten.eintraege[i] = e; else Daten.eintraege.push(e);
+  sichern();
+}
+function eintragLöschen(id){
+  Daten.eintraege = Daten.eintraege.filter(e => e.id !== id);
+  sichern();
+}
+function hakenUm(id){
+  const e = eintragNach(id);
+  if(!e) return;
+  e.erledigt = !e.erledigt;
+  e.geaendert = Date.now();
+  sichern();
+  stups(e.erledigt ? [10, 40, 14] : 8);
+}
+
+/* ---------- Werte ---------- */
+function werteAm(datum){ return Daten.werte[datum] || {}; }
+function hatWerte(datum){
+  const w = Daten.werte[datum];
+  if(!w) return false;
+  return ["gewicht","puls","schlaf","rpe","erholung","notiz"].some(k => w[k] !== undefined && w[k] !== null && w[k] !== "");
+}
+</script>

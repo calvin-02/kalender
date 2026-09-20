@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f1f2f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#131417" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Tagwerk — Kalender für Training, Studium und Termine.">
+<title>Tagwerk</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* ============================================================
+   Tagwerk — Gestaltungssystem
+   Farben der Kategorien nach Okabe-Ito (farbfehlsichtigkeitssicher),
+   für hellen Grund abgedunkelt, für dunklen Grund aufgehellt.
+   ============================================================ */
+:root{
+  --papier:#f1f2f4;  --blatt:#ffffff;  --senke:#e7e9ec;  --erhoben:#fafbfc;
+  --rand:#d9dce1;    --rand-stark:#bcc1c9;
+  --tinte:#14161a;   --tinte-2:#464c55;  --tinte-3:#7a818b;
+  --kraft:#c2571f;   --lauf:#00786b;     --ba:#0060a8;     --privat:#a34c86;
+  --kraft-f:#fae7dc; --lauf-f:#d6ecea;   --ba-f:#d9e8f6;   --privat-f:#f6e2ee;
+  --gut:#2f7a48;     --warn:#95670f;     --kritisch:#a83329;
+  --schatten:0 1px 2px rgba(20,22,26,.05), 0 10px 30px -18px rgba(20,22,26,.28);
+  --r:10px; --r-gross:16px;
+  --takt:.18s cubic-bezier(.22,.61,.36,1);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-schema="hell"]){
+    --papier:#131417; --blatt:#1b1d21; --senke:#0e0f12; --erhoben:#23262b;
+    --rand:#2a2d33;   --rand-stark:#414650;
+    --tinte:#eef0f3;  --tinte-2:#aeb4bd;  --tinte-3:#7f858e;
+    --kraft:#f08b53;  --lauf:#3fb9a8;     --ba:#5ba8e8;     --privat:#d98ab8;
+    --kraft-f:#33200f;--lauf-f:#0b2e2a;   --ba-f:#0d2840;   --privat-f:#2f1728;
+    --gut:#5cb87a;    --warn:#d4a33e;     --kritisch:#e8776a;
+    --schatten:0 1px 2px rgba(0,0,0,.5), 0 10px 30px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-schema="dunkel"]{
+  --papier:#131417; --blatt:#1b1d21; --senke:#0e0f12; --erhoben:#23262b;
+  --rand:#2a2d33;   --rand-stark:#414650;
+  --tinte:#eef0f3;  --tinte-2:#aeb4bd;  --tinte-3:#7f858e;
+  --kraft:#f08b53;  --lauf:#3fb9a8;     --ba:#5ba8e8;     --privat:#d98ab8;
+  --kraft-f:#33200f;--lauf-f:#0b2e2a;   --ba-f:#0d2840;   --privat-f:#2f1728;
+  --gut:#5cb87a;    --warn:#d4a33e;     --kritisch:#e8776a;
+  --schatten:0 1px 2px rgba(0,0,0,.5), 0 10px 30px -18px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--papier); color:var(--tinte);
+  font-family:"Instrument Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-size:16px; line-height:1.45; -webkit-font-smoothing:antialiased;
+  overscroll-behavior-y:none;
+}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums}
+[hidden]{display:none !important}
+button{font:inherit; color:inherit; border:0; background:none; cursor:pointer}
+:focus-visible{outline:2px solid var(--tinte); outline-offset:2px; border-radius:4px}
+
+.hülle{max-width:560px; margin:0 auto; min-height:100dvh; display:flex; flex-direction:column}
+
+/* ---------- Kopfleiste ---------- */
+.kopf{
+  position:sticky; top:0; z-index:40; background:var(--papier);
+  padding:calc(env(safe-area-inset-top) + 14px) 18px 0;
+}
+.kopf-zeile{display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:34px}
+.monat{font-family:"Instrument Serif",Georgia,serif; font-size:25px; line-height:1; letter-spacing:.01em}
+.monat i{font-style:italic; color:var(--tinte-3)}
+.kopf-knöpfe{display:flex; gap:2px; align-items:center}
+.ikon{
+  width:38px; height:38px; display:grid; place-items:center; border-radius:var(--r);
+  color:var(--tinte-2); transition:background var(--takt), color var(--takt);
+}
+.ikon:active{background:var(--senke)}
+.ikon svg{width:19px; height:19px; display:block}
+@media (hover:hover){ .ikon:hover{background:var(--senke); color:var(--tinte)} }
+
+.schalter{
+  display:flex; gap:0; margin:12px 0 0; padding:3px; background:var(--senke);
+  border-radius:var(--r); position:relative;
+}
+.schalter button{
+  flex:1; padding:7px 4px; border-radius:calc(var(--r) - 3px); font-size:13.5px; font-weight:500;
+  color:var(--tinte-3); transition:color var(--takt); position:relative; z-index:2; letter-spacing:.01em;
+}
+.schalter button[aria-selected="true"]{color:var(--tinte); font-weight:600}
+.gleiter{
+  position:absolute; top:3px; bottom:3px; border-radius:calc(var(--r) - 3px);
+  background:var(--blatt); box-shadow:0 1px 3px rgba(20,22,26,.13); z-index:1;
+  transition:transform var(--takt), width var(--takt);
+}
+.kopf-linie{height:1px; background:var(--rand); margin-top:12px}
+
+/* ---------- Bühne ---------- */
+.bühne{flex:1; padding:0 18px calc(env(safe-area-inset-bottom) + 96px)}
+
+/* ---------- Tagesansicht ---------- */
+.tag-kopf{display:flex; align-items:flex-end; gap:14px; padding:22px 0 16px}
+.tag-zahl{
+  font-family:"Instrument Serif",Georgia,serif; font-size:76px; line-height:.82;
+  letter-spacing:-.02em; font-variant-numeric:lining-nums;
+}
+.tag-neben{padding-bottom:6px}
+.tag-wochentag{font-size:17px; font-weight:600; line-height:1.15}
+.tag-monat{
+  font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--tinte-3); margin-top:3px;
+}
+.heute-punkt{
+  display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--kraft);
+  vertical-align:middle; margin-left:7px;
+}
+.tag-blättern{margin-left:auto; display:flex; gap:2px; padding-bottom:4px}
+
+/* ---------- Abschnitte ---------- */
+.abschnitt{margin-top:22px}
+.abschnitt:first-child{margin-top:4px}
+.abschnitt-kopf{
+  font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.15em;
+  text-transform:uppercase; color:var(--tinte-3); padding-bottom:7px;
+  display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+}
+
+/* ---------- Eintragszeile ---------- */
+.liste{display:flex; flex-direction:column}
+.zeile{
+  display:grid; grid-template-columns:3px 1fr auto; gap:0 13px; align-items:center;
+  width:100%; text-align:left; padding:13px 2px 13px 0; border-bottom:1px solid var(--rand);
+  transition:background var(--takt); border-radius:2px;
+}
+.zeile:first-child{border-top:1px solid var(--rand)}
+.zeile:active{background:var(--senke)}
+.balken{width:3px; align-self:stretch; border-radius:2px; min-height:26px}
+.k-kraft .balken{background:var(--kraft)}
+.k-lauf .balken{background:var(--lauf)}
+.k-ba .balken{background:var(--ba)}
+.k-privat .balken{background:var(--privat)}
+.zeile-mitte{min-width:0}
+.zeile-titel{font-size:15.5px; font-weight:500; line-height:1.3; word-break:break-word}
+.zeile-unter{
+  font-size:13px; color:var(--tinte-3); margin-top:2px; line-height:1.35;
+  display:flex; flex-wrap:wrap; gap:0 8px; align-items:baseline;
+}
+.zeile-zeit{font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--tinte-2); font-weight:500}
+.zeile-rechts{display:flex; align-items:center; gap:10px; flex:none}
+.erledigt .zeile-titel{text-decoration:line-through; color:var(--tinte-3); font-weight:400}
+.erledigt .balken{opacity:.35}
+.überfällig .zeile-titel{color:var(--kritisch)}
+
+.haken{
+  width:23px; height:23px; border-radius:50%; border:1.5px solid var(--rand-stark);
+  display:grid; place-items:center; flex:none; transition:all var(--takt); background:transparent;
+}
+.haken svg{width:12px; height:12px; opacity:0; transform:scale(.6); transition:all var(--takt); color:#fff}
+.zeile.erledigt .haken{background:var(--gut); border-color:var(--gut)}
+.zeile.erledigt .haken svg{opacity:1; transform:scale(1)}
+
+.leer{
+  padding:30px 4px; text-align:center; color:var(--tinte-3); font-size:14px; line-height:1.55;
+}
+.leer b{display:block; color:var(--tinte-2); font-weight:600; font-size:15px; margin-bottom:4px}
+
+/* ---------- Wochenzähler ---------- */
+.zähler{display:grid; grid-template-columns:1fr 1fr; gap:9px; margin:18px 0 0}
+.zähl{
+  background:var(--blatt); border:1px solid var(--rand); border-radius:var(--r);
+  padding:11px 13px; display:flex; align-items:center; gap:10px;
+}
+.zähl-punkt{width:8px; height:8px; border-radius:50%; flex:none}
+.zähl-text{min-width:0}
+.zähl-wert{font-size:18px; font-weight:600; line-height:1; font-variant-numeric:tabular-nums}
+.zähl-name{
+  font-family:"IBM Plex Mono",monospace; font-size:9.5px; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--tinte-3); margin-top:4px;
+}
+.zähl.offen .zähl-wert{color:var(--kritisch)}
+
+/* ---------- Wochenansicht ---------- */
+.woche-kopf{
+  display:flex; align-items:center; justify-content:space-between; gap:10px; padding:20px 0 12px;
+}
+.woche-titel{font-size:16px; font-weight:600}
+.woche-titel span{color:var(--tinte-3); font-weight:400; font-family:"IBM Plex Mono",monospace; font-size:12.5px}
+.wtag{
+  display:grid; grid-template-columns:44px 1fr; gap:12px; padding:11px 0;
+  border-bottom:1px solid var(--rand); align-items:start; width:100%; text-align:left;
+}
+.wtag:first-of-type{border-top:1px solid var(--rand)}
+.wtag:active{background:var(--senke)}
+.wtag-datum{text-align:center; padding-top:1px}
+.wtag-zahl{font-size:19px; font-weight:600; line-height:1; font-variant-numeric:tabular-nums}
+.wtag-name{
+  font-family:"IBM Plex Mono",monospace; font-size:9.5px; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--tinte-3); margin-top:4px;
+}
+.wtag.ist .wtag-datum{position:relative}
+.wtag.ist .wtag-zahl{
+  background:var(--tinte); color:var(--papier); border-radius:50%;
+  width:30px; height:30px; display:grid; place-items:center; margin:0 auto; font-size:16px;
+}
+.wtag-inhalt{display:flex; flex-direction:column; gap:5px; min-width:0; padding-top:2px}
+.chip{
+  display:grid; grid-template-columns:3px 1fr; gap:8px; align-items:center;
+  font-size:13.5px; line-height:1.3; padding:3px 0; min-width:0;
+}
+.chip .balken{min-height:16px}
+.chip span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.chip.erl span{text-decoration:line-through; color:var(--tinte-3)}
+.wtag-leer{font-size:13px; color:var(--tinte-3); padding:3px 0}
+
+/* ---------- Monatsansicht ---------- */
+.monat-gitter{display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-top:8px}
+.monat-kopf{
+  font-family:"IBM Plex Mono",monospace; font-size:9.5px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--tinte-3); text-align:center; padding:10px 0 6px;
+}
+.mtag{
+  aspect-ratio:1/1.12; border-radius:var(--r); padding:6px 3px 4px; display:flex; flex-direction:column;
+  align-items:center; gap:4px; transition:background var(--takt); position:relative;
+}
+.mtag:active{background:var(--senke)}
+.mtag-zahl{font-size:14.5px; font-variant-numeric:tabular-nums; line-height:1; font-weight:500}
+.mtag.fremd .mtag-zahl{color:var(--tinte-3); opacity:.6}
+.mtag.ist .mtag-zahl{
+  background:var(--tinte); color:var(--papier); border-radius:50%;
+  width:25px; height:25px; display:grid; place-items:center; margin-top:-3px; font-weight:600;
+}
+.mtag.gewählt{background:var(--senke); box-shadow:inset 0 0 0 1.5px var(--rand-stark)}
+.punkte{display:flex; gap:2.5px; flex-wrap:wrap; justify-content:center; max-width:100%}
+.punkt{width:5px; height:5px; border-radius:50%}
+.p-kraft{background:var(--kraft)} .p-lauf{background:var(--lauf)}
+.p-ba{background:var(--ba)} .p-privat{background:var(--privat)}
+
+/* ---------- Werte ---------- */
+.feldpaar{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px}
+.feld label{
+  display:block; font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--tinte-3); margin-bottom:6px;
+}
+.feld input, .feld select, .feld textarea{
+  width:100%; font:inherit; font-size:16px; padding:11px 12px; border-radius:var(--r);
+  background:var(--blatt); color:var(--tinte); border:1px solid var(--rand); transition:border-color var(--takt);
+}
+.feld input:focus, .feld select:focus, .feld textarea:focus{outline:none; border-color:var(--tinte-2)}
+.feld .mono-eingabe{font-family:"IBM Plex Mono",monospace}
+.regler{margin-top:14px}
+.regler-kopf{display:flex; justify-content:space-between; align-items:baseline; gap:10px}
+.regler-name{
+  font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--tinte-3);
+}
+.regler-wert{font-size:16px; font-weight:600; font-variant-numeric:tabular-nums}
+.regler-stufe{font-size:13px; color:var(--tinte-3); margin-top:2px; min-height:19px}
+input[type=range]{
+  -webkit-appearance:none; appearance:none; width:100%; background:transparent; margin:8px 0 0; padding:0;
+}
+input[type=range]::-webkit-slider-runnable-track{height:6px; border-radius:4px; background:var(--senke)}
+input[type=range]::-moz-range-track{height:6px; border-radius:4px; background:var(--senke)}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:26px; height:26px; margin-top:-10px; border-radius:50%;
+  background:var(--tinte); border:3px solid var(--blatt); box-shadow:0 1px 4px rgba(0,0,0,.25);
+}
+input[type=range]::-moz-range-thumb{
+  width:20px; height:20px; border-radius:50%; background:var(--tinte); border:3px solid var(--blatt);
+}
+
+/* ---------- Fußleiste ---------- */
+.fuß{
+  position:fixed; left:0; right:0; bottom:0; z-index:45; pointer-events:none;
+  padding:0 18px calc(env(safe-area-inset-bottom) + 16px);
+}
+.fuß-innen{
+  max-width:560px; margin:0 auto; display:flex; justify-content:flex-end; pointer-events:auto;
+}
+.plus{
+  width:56px; height:56px; border-radius:18px; background:var(--tinte); color:var(--papier);
+  display:grid; place-items:center; box-shadow:var(--schatten);
+  transition:transform var(--takt);
+}
+.plus:active{transform:scale(.93)}
+.plus svg{width:23px; height:23px}
+
+/* ---------- Blende / Bogen ---------- */
+.blende{
+  position:fixed; inset:0; z-index:60; background:rgba(12,14,17,.42);
+  opacity:0; pointer-events:none; transition:opacity var(--takt);
+  -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px);
+}
+.blende.auf{opacity:1; pointer-events:auto}
+.bogen{
+  position:fixed; left:0; right:0; bottom:0; z-index:61; background:var(--blatt);
+  border-radius:var(--r-gross) var(--r-gross) 0 0; box-shadow:var(--schatten);
+  transform:translateY(102%); transition:transform .26s cubic-bezier(.22,.61,.36,1);
+  max-height:92dvh; display:flex; flex-direction:column;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.bogen.auf{transform:translateY(0)}
+.bogen-innen{max-width:560px; width:100%; margin:0 auto; overflow-y:auto; padding:0 18px 18px}
+.griff{width:36px; height:4px; border-radius:3px; background:var(--rand-stark); margin:10px auto 2px; flex:none}
+.bogen-kopf{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:10px 0 14px; position:sticky; top:0; background:var(--blatt); z-index:2;
+}
+.bogen-titel{font-size:17px; font-weight:600}
+.art-wahl{display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-bottom:4px}
+.art{
+  padding:11px 4px 10px; border-radius:var(--r); border:1.5px solid var(--rand);
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  font-size:11.5px; font-weight:500; line-height:1.15; text-align:center; color:var(--tinte-2);
+  transition:all var(--takt); background:var(--blatt);
+}
+.art i{width:9px; height:9px; border-radius:50%; display:block}
+.art[aria-pressed="true"]{border-color:currentColor; color:var(--tinte)}
+.art.a-kraft i{background:var(--kraft)}  .art.a-kraft[aria-pressed="true"]{background:var(--kraft-f); border-color:var(--kraft)}
+.art.a-lauf i{background:var(--lauf)}    .art.a-lauf[aria-pressed="true"]{background:var(--lauf-f); border-color:var(--lauf)}
+.art.a-ba i{background:var(--ba)}        .art.a-ba[aria-pressed="true"]{background:var(--ba-f); border-color:var(--ba)}
+.art.a-privat i{background:var(--privat)}.art.a-privat[aria-pressed="true"]{background:var(--privat-f); border-color:var(--privat)}
+
+.knopf{
+  width:100%; padding:14px; border-radius:var(--r); background:var(--tinte); color:var(--papier);
+  font-size:16px; font-weight:600; margin-top:18px; transition:transform var(--takt);
+}
+.knopf:active{transform:scale(.985)}
+.knopf.still{background:transparent; color:var(--tinte-2); border:1px solid var(--rand); margin-top:8px; font-weight:500}
+.knopf.gefahr{background:transparent; color:var(--kritisch); border:1px solid var(--rand); margin-top:8px; font-weight:500}
+
+.schalt-zeile{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:14px 0; border-bottom:1px solid var(--rand);
+}
+.schalt-zeile:last-of-type{border-bottom:0}
+.schalt-text{font-size:15px}
+.schalt-text small{display:block; color:var(--tinte-3); font-size:12.5px; margin-top:1px}
+.kippe{
+  width:48px; height:29px; border-radius:16px; background:var(--rand-stark); position:relative;
+  flex:none; transition:background var(--takt);
+}
+.kippe::after{
+  content:""; position:absolute; top:3px; left:3px; width:23px; height:23px; border-radius:50%;
+  background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.28); transition:transform var(--takt);
+}
+.kippe[aria-pressed="true"]{background:var(--gut)}
+.kippe[aria-pressed="true"]::after{transform:translateX(19px)}
+
+.meldung{
+  position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 88px); transform:translate(-50%,10px);
+  z-index:70; background:var(--tinte); color:var(--papier); padding:11px 17px; border-radius:var(--r);
+  font-size:14px; font-weight:500; box-shadow:var(--schatten); opacity:0; pointer-events:none;
+  transition:opacity var(--takt), transform var(--takt); max-width:calc(100vw - 36px);
+}
+.meldung.auf{opacity:1; transform:translate(-50%,0)}
+
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:.01ms !important; animation-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+<div class="hülle">
+
+  <header class="kopf">
+    <div class="kopf-zeile">
+      <h1 class="monat" id="kopfMonat">Tagwerk</h1>
+      <div class="kopf-knöpfe">
+        <button class="ikon" id="knopfHeute" aria-label="Zu heute springen" title="Heute">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/><circle cx="12" cy="15" r="1.8" fill="currentColor" stroke="none"/></svg>
+        </button>
+        <button class="ikon" id="knopfWerte" aria-label="Tageswerte" title="Werte">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l5-6 4 4 4-7 5 5"/><path d="M3 21h18"/></svg>
+        </button>
+        <button class="ikon" id="knopfMehr" aria-label="Einstellungen" title="Einstellungen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="schalter" role="tablist" aria-label="Ansicht">
+      <div class="gleiter" id="gleiter"></div>
+      <button role="tab" id="tabTag" aria-selected="true">Tag</button>
+      <button role="tab" id="tabWoche" aria-selected="false">Woche</button>
+      <button role="tab" id="tabMonat" aria-selected="false">Monat</button>
+      <button role="tab" id="tabAufgaben" aria-selected="false">Aufgaben</button>
+    </div>
+    <div class="kopf-linie"></div>
+  </header>

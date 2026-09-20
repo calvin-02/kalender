@@ -1,0 +1,21 @@
+# Hier liegen keine Termine, keine Werte, keine Schlüssel.
+# Die Daten leben im Gerät und später in Firestore — nicht im Repo.
+
+*.json
+!manifest.webmanifest
+!package.json
+
+# Zugangsdaten — niemals einchecken
+dienstkonto*.json
+*serviceaccount*.json
+.env
+.env.*
+
+# Sicherungen aus der App
+tagwerk-*.json
+Sicherungen/
+
+# Betriebssystem
+Thumbs.db
+desktop.ini
+.DS_Store

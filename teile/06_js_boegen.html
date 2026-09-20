@@ -1,0 +1,225 @@
+
+<script>
+/* ============================================================
+   Tagwerk — Bögen: Eintrag anlegen und ändern, Werte, Einstellungen
+   ============================================================ */
+
+let offenerBogen = null;
+let bearbeiteId = null;
+let gewählteArt = "kraft";
+let werteDatum = null;
+
+function bogenÖffnen(id){
+  bogenSchließen(true);
+  offenerBogen = id;
+  el("blende").classList.add("auf");
+  el(id).classList.add("auf");
+  document.body.style.overflow = "hidden";
+}
+function bogenSchließen(still){
+  if(offenerBogen){
+    el(offenerBogen).classList.remove("auf");
+    offenerBogen = null;
+  }
+  el("blende").classList.remove("auf");
+  document.body.style.overflow = "";
+  if(!still && document.activeElement) document.activeElement.blur();
+}
+
+/* ---------- Eintrag ---------- */
+function artSetzen(art){
+  gewählteArt = art;
+  document.querySelectorAll("#artWahl .art").forEach(b => {
+    b.setAttribute("aria-pressed", b.dataset.art === art ? "true" : "false");
+  });
+  /* Training ist standardmäßig ohne Uhrzeit, alles andere mit */
+  if(!bearbeiteId){
+    const ganz = (art === "kraft" || art === "lauf");
+    kippeSetzen("kippeGanztags", ganz);
+    el("zeitBlock").hidden = ganz;
+  }
+}
+function kippeSetzen(id, an){
+  el(id).setAttribute("aria-pressed", an ? "true" : "false");
+}
+function kippeAn(id){ return el(id).getAttribute("aria-pressed") === "true"; }
+
+function eintragNeu(){
+  bearbeiteId = null;
+  el("eintragTitel").textContent = "Neuer Eintrag";
+  el("eLöschen").hidden = true;
+  el("eTitel").value = "";
+  el("eNotiz").value = "";
+  el("eDatum").value = Anker || heute();
+  el("eVon").value = "";
+  el("eBis").value = "";
+  kippeSetzen("kippeAufgabe", false);
+  el("datumBlock").hidden = false;
+  artSetzen("kraft");
+  bogenÖffnen("bogenEintrag");
+  setTimeout(() => el("eTitel").focus(), 260);
+}
+
+function eintragÖffnen(id){
+  const e = eintragNach(id);
+  if(!e) return;
+  bearbeiteId = id;
+  el("eintragTitel").textContent = "Eintrag ändern";
+  el("eLöschen").hidden = false;
+  el("eTitel").value = e.titel || "";
+  el("eNotiz").value = e.notiz || "";
+  el("eDatum").value = e.datum || heute();
+  el("eVon").value = e.von || "";
+  el("eBis").value = e.bis || "";
+  gewählteArt = e.art;
+  document.querySelectorAll("#artWahl .art").forEach(b => {
+    b.setAttribute("aria-pressed", b.dataset.art === e.art ? "true" : "false");
+  });
+  kippeSetzen("kippeAufgabe", !!e.aufgabe);
+  el("datumBlock").hidden = !!e.aufgabe;
+  kippeSetzen("kippeGanztags", !!e.ganztags);
+  el("zeitBlock").hidden = !!e.ganztags;
+  bogenÖffnen("bogenEintrag");
+}
+
+function eintragAusFormular(){
+  const istAufgabe = kippeAn("kippeAufgabe");
+  const ganz = kippeAn("kippeGanztags");
+  const titel = el("eTitel").value.trim();
+  if(!titel){
+    melden("Bitte einen Titel eingeben");
+    el("eTitel").focus();
+    return null;
+  }
+  const alt = bearbeiteId ? eintragNach(bearbeiteId) : null;
+  return {
+    id: bearbeiteId || kennung(),
+    art: gewählteArt,
+    titel: titel,
+    aufgabe: istAufgabe,
+    datum: istAufgabe ? null : (el("eDatum").value || heute()),
+    ganztags: istAufgabe ? true : ganz,
+    von: (!istAufgabe && !ganz) ? (el("eVon").value || null) : null,
+    bis: (!istAufgabe && !ganz) ? (el("eBis").value || null) : null,
+    notiz: el("eNotiz").value.trim(),
+    erledigt: alt ? !!alt.erledigt : false,
+    angelegt: alt ? alt.angelegt : Date.now()
+  };
+}
+
+/* ---------- Werte ---------- */
+function werteÖffnen(datum){
+  werteDatum = datum || Anker;
+  const w = werteAm(werteDatum);
+  el("werteDatum").textContent = deDatum(werteDatum, true);
+  el("wGewicht").value = w.gewicht != null ? deZahl(w.gewicht, 1) : "";
+  el("wPuls").value    = w.puls != null ? w.puls : "";
+  el("wSchlaf").value  = w.schlaf != null ? deZahl(w.schlaf, 1) : "";
+  el("wNotiz").value   = w.notiz || "";
+
+  reglerFüllen("wRpe", "wRpeWert", "wRpeStufe", RPE_STUFEN, w.rpe);
+  reglerFüllen("wErh", "wErhWert", "wErhStufe", ERH_STUFEN, w.erholung);
+  bogenÖffnen("bogenWerte");
+}
+function reglerFüllen(idR, idW, idS, stufen, wert){
+  const r = el(idR);
+  r.value = wert != null ? wert : 5;
+  if(wert == null) r.dataset.leer = "1"; else delete r.dataset.leer;
+  el(idW).textContent = wert != null ? wert + " / 10" : "–";
+  el(idS).textContent = wert != null ? stufen[wert] : "noch nicht eingetragen";
+}
+function reglerHorchen(idR, idW, idS, stufen){
+  el(idR).addEventListener("input", function(){
+    delete this.dataset.leer;
+    el(idW).textContent = this.value + " / 10";
+    el(idS).textContent = stufen[+this.value];
+  });
+}
+
+function werteSpeichern(){
+  const w = Object.assign({}, werteAm(werteDatum));
+  const setze = (schlüssel, roh) => {
+    const v = zahl(roh);
+    if(v === null) delete w[schlüssel]; else w[schlüssel] = v;
+  };
+  setze("gewicht", el("wGewicht").value);
+  setze("puls", el("wPuls").value);
+  setze("schlaf", el("wSchlaf").value);
+  if(!el("wRpe").dataset.leer) w.rpe = +el("wRpe").value;
+  if(!el("wErh").dataset.leer) w.erholung = +el("wErh").value;
+  const n = el("wNotiz").value.trim();
+  if(n) w.notiz = n; else delete w.notiz;
+  w.geaendert = Date.now();
+
+  if(Object.keys(w).filter(k => k !== "geaendert").length){
+    Daten.werte[werteDatum] = w;
+  } else {
+    delete Daten.werte[werteDatum];
+  }
+  sichern();
+  bogenSchließen();
+  zeichneAlles();
+  melden("Werte gespeichert");
+  stups([10, 30, 10]);
+}
+
+/* ---------- Einstellungen ---------- */
+function schemaAnwenden(){
+  const s = Daten.einst.schema || "system";
+  if(s === "system") document.documentElement.removeAttribute("data-schema");
+  else document.documentElement.setAttribute("data-schema", s);
+  const farbe = getComputedStyle(document.documentElement).getPropertyValue("--papier").trim();
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute("content", farbe));
+}
+
+function mehrÖffnen(){
+  el("schemaWahl").value = Daten.einst.schema || "system";
+  el("fassungAnzeige").textContent = FASSUNG;
+  const anzahl = Daten.eintraege.length, tage = Object.keys(Daten.werte).length;
+  el("speicherStand").textContent =
+    anzahl + " Einträge · " + tage + " Tage mit Werten";
+  bogenÖffnen("bogenMehr");
+}
+
+function exportieren(){
+  const inhalt = JSON.stringify({fassung:FASSUNG, gesichert:new Date().toISOString(), daten:Daten}, null, 2);
+  const blob = new Blob([inhalt], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "tagwerk-" + heute() + ".json";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  melden("Datei gesichert");
+}
+
+function importieren(datei){
+  const leser = new FileReader();
+  leser.onload = () => {
+    try{
+      const d = JSON.parse(leser.result);
+      const q = d.daten || d;
+      if(!Array.isArray(q.eintraege)) throw new Error("Format passt nicht");
+      /* Zusammenführen: neuerer Stand gewinnt, nichts wird stillschweigend gelöscht */
+      const bekannt = {};
+      Daten.eintraege.forEach(e => bekannt[e.id] = e);
+      q.eintraege.forEach(e => {
+        const alt = bekannt[e.id];
+        if(!alt || (e.geaendert || 0) >= (alt.geaendert || 0)) bekannt[e.id] = e;
+      });
+      Daten.eintraege = Object.values(bekannt);
+      Object.keys(q.werte || {}).forEach(tag => {
+        const alt = Daten.werte[tag];
+        if(!alt || ((q.werte[tag].geaendert || 0) >= (alt.geaendert || 0))) Daten.werte[tag] = q.werte[tag];
+      });
+      sichern();
+      zeichneAlles();
+      bogenSchließen();
+      melden("Eingelesen: " + q.eintraege.length + " Einträge");
+    }catch(err){
+      melden("Datei konnte nicht gelesen werden");
+    }
+  };
+  leser.readAsText(datei);
+}
+</script>

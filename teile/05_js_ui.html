@@ -1,0 +1,340 @@
+
+<script>
+/* ============================================================
+   Tagwerk — Oberfläche: Ansichten zeichnen
+   ============================================================ */
+
+/* ---------- Eintragszeile ---------- */
+function zeileBauen(e, opt){
+  opt = opt || {};
+  const z = neu("button", "zeile k-" + e.art);
+  z.type = "button";
+  if(e.erledigt) z.classList.add("erledigt");
+  if(opt.überfällig) z.classList.add("überfällig");
+  z.dataset.id = e.id;
+
+  z.appendChild(neu("span", "balken"));
+
+  const mitte = neu("div", "zeile-mitte");
+  mitte.appendChild(neu("div", "zeile-titel", e.titel || ARTEN[e.art].name));
+  const unten = [];
+  if(!e.ganztags && e.von) unten.push(e.von + (e.bis ? "–" + e.bis : "") + " Uhr");
+  if(e.notiz) unten.push(e.notiz);
+  if(opt.datumZeigen && e.datum) unten.push(deDatum(e.datum));
+  if(unten.length){
+    const u = neu("div", "zeile-unter");
+    unten.forEach((t, i) => {
+      const s = neu("span", i === 0 && !e.ganztags && e.von ? "zeile-zeit" : null, t);
+      u.appendChild(s);
+    });
+    mitte.appendChild(u);
+  }
+  z.appendChild(mitte);
+
+  const rechts = neu("div", "zeile-rechts");
+  const h = neu("span", "haken");
+  h.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5.5 5.5L20 7"/></svg>';
+  h.setAttribute("role", "checkbox");
+  h.setAttribute("aria-checked", e.erledigt ? "true" : "false");
+  h.setAttribute("aria-label", "Erledigt");
+  h.addEventListener("click", ev => {
+    ev.stopPropagation();
+    hakenUm(e.id);
+    zeichneAlles();
+  });
+  rechts.appendChild(h);
+  z.appendChild(rechts);
+
+  z.addEventListener("click", () => eintragÖffnen(e.id));
+  return z;
+}
+
+function abschnitt(titel, zusatz){
+  const a = neu("div", "abschnitt");
+  const k = neu("div", "abschnitt-kopf");
+  k.appendChild(neu("span", null, titel));
+  if(zusatz) k.appendChild(neu("span", null, zusatz));
+  a.appendChild(k);
+  const l = neu("div", "liste");
+  a.appendChild(l);
+  a._liste = l;
+  return a;
+}
+
+function leerZustand(fett, text){
+  const d = neu("div", "leer");
+  d.appendChild(neu("b", null, fett));
+  d.appendChild(document.createTextNode(text));
+  return d;
+}
+
+/* ---------- Tagesansicht ---------- */
+function zeichneTag(){
+  const d = ausIso(Anker);
+  el("tagZahl").textContent = d.getDate();
+  const wt = neu("span", null, WOCHENTAGE[d.getDay()]);
+  el("tagWochentag").textContent = "";
+  el("tagWochentag").appendChild(wt);
+  if(Anker === heute()){
+    const p = neu("span", "heute-punkt");
+    p.title = "Heute";
+    el("tagWochentag").appendChild(p);
+  }
+  el("tagMonat").textContent = MONATE[d.getMonth()] + " " + d.getFullYear() + " · KW " + kalenderwoche(Anker);
+
+  const ziel = el("tagInhalt");
+  ziel.textContent = "";
+
+  const alle = einträgeAm(Anker);
+  const ganz = alle.filter(e => e.ganztags);
+  const mitZeit = alle.filter(e => !e.ganztags);
+
+  if(!alle.length){
+    ziel.appendChild(leerZustand("Nichts eingetragen",
+      "Tippe auf das Plus, um einen Termin oder eine Trainingseinheit anzulegen."));
+  }
+  if(ganz.length){
+    const a = abschnitt("Ohne Uhrzeit");
+    ganz.forEach(e => a._liste.appendChild(zeileBauen(e)));
+    ziel.appendChild(a);
+  }
+  if(mitZeit.length){
+    const a = abschnitt("Termine");
+    mitZeit.forEach(e => a._liste.appendChild(zeileBauen(e)));
+    ziel.appendChild(a);
+  }
+
+  /* Tageswerte als anklickbare Zusammenfassung */
+  const w = werteAm(Anker);
+  const a2 = abschnitt("Tageswerte");
+  const z = neu("button", "zeile");
+  z.type = "button";
+  z.style.gridTemplateColumns = "1fr auto";
+  const mitte = neu("div", "zeile-mitte");
+  const teile = [];
+  if(w.gewicht != null) teile.push(deZahl(w.gewicht, 1) + " kg");
+  if(w.puls != null) teile.push(w.puls + " bpm");
+  if(w.schlaf != null) teile.push(deZahl(w.schlaf, 1) + " h Schlaf");
+  if(w.rpe != null) teile.push("Anstrengung " + w.rpe);
+  if(w.erholung != null) teile.push("Erholung " + w.erholung);
+  mitte.appendChild(neu("div", "zeile-titel", teile.length ? teile.join("  ·  ") : "Noch nichts eingetragen"));
+  if(!teile.length) mitte.querySelector(".zeile-titel").style.color = "var(--tinte-3)";
+  mitte.querySelector(".zeile-titel").style.fontWeight = teile.length ? "500" : "400";
+  z.appendChild(mitte);
+  const pfeil = neu("span", "zeile-rechts");
+  pfeil.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--tinte-3)" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
+  z.appendChild(pfeil);
+  z.addEventListener("click", () => werteÖffnen(Anker));
+  a2._liste.appendChild(z);
+  ziel.appendChild(a2);
+}
+
+/* ---------- Wochenansicht ---------- */
+function zeichneWoche(){
+  const start = WochenAnker, ende = plusTage(start, 6);
+  const dS = ausIso(start), dE = ausIso(ende);
+  el("wocheTitel").innerHTML = "";
+  el("wocheTitel").appendChild(document.createTextNode(
+    dS.getDate() + ". " + MONATE[dS.getMonth()].slice(0,3) + " – " + dE.getDate() + ". " + MONATE[dE.getMonth()].slice(0,3) + " "));
+  el("wocheTitel").appendChild(neu("span", null, "KW " + kalenderwoche(start)));
+
+  /* Zähler: Kraft und Laufen getrennt, damit Läufe nicht untergehen */
+  const zähler = el("wocheZähler");
+  zähler.textContent = "";
+  [["kraft","Krafttraining"],["lauf","Laufen"]].forEach(([art, name]) => {
+    let geplant = 0, fertig = 0;
+    for(let i = 0; i < 7; i++){
+      einträgeAm(plusTage(start, i)).forEach(e => {
+        if(e.art !== art) return;
+        geplant++;
+        if(e.erledigt) fertig++;
+      });
+    }
+    const k = neu("div", "zähl" + (geplant && fertig < geplant && start <= heute() ? " offen" : ""));
+    const p = neu("span", "zähl-punkt");
+    p.style.background = ARTEN[art].farbe;
+    k.appendChild(p);
+    const t = neu("div", "zähl-text");
+    t.appendChild(neu("div", "zähl-wert", geplant ? fertig + " / " + geplant : "–"));
+    t.appendChild(neu("div", "zähl-name", name));
+    k.appendChild(t);
+    zähler.appendChild(k);
+  });
+
+  const ziel = el("wocheTage");
+  ziel.textContent = "";
+  for(let i = 0; i < 7; i++){
+    const tag = plusTage(start, i);
+    const d = ausIso(tag);
+    const zeile = neu("button", "wtag" + (tag === heute() ? " ist" : ""));
+    zeile.type = "button";
+
+    const dat = neu("div", "wtag-datum");
+    dat.appendChild(neu("div", "wtag-zahl", d.getDate()));
+    dat.appendChild(neu("div", "wtag-name", WT_KURZ[d.getDay()]));
+    zeile.appendChild(dat);
+
+    const inhalt = neu("div", "wtag-inhalt");
+    const liste = einträgeAm(tag);
+    if(!liste.length){
+      inhalt.appendChild(neu("div", "wtag-leer", "—"));
+    } else {
+      liste.slice(0, 4).forEach(e => {
+        const c = neu("div", "chip k-" + e.art + (e.erledigt ? " erl" : ""));
+        c.appendChild(neu("span", "balken"));
+        const t = (!e.ganztags && e.von ? e.von + "  " : "") + (e.titel || ARTEN[e.art].name);
+        c.appendChild(neu("span", null, t));
+        inhalt.appendChild(c);
+      });
+      if(liste.length > 4) inhalt.appendChild(neu("div", "wtag-leer", "+ " + (liste.length - 4) + " weitere"));
+    }
+    zeile.appendChild(inhalt);
+    zeile.addEventListener("click", () => { Anker = tag; sichtSetzen("tag"); });
+    ziel.appendChild(zeile);
+  }
+}
+
+/* ---------- Monatsansicht ---------- */
+function zeichneMonat(){
+  const d = ausIso(MonatsAnker);
+  el("monatTitel").textContent = MONATE[d.getMonth()] + " " + d.getFullYear();
+
+  const kopf = el("monatKopf");
+  if(!kopf.childElementCount){
+    ["Mo","Di","Mi","Do","Fr","Sa","So"].forEach(n => kopf.appendChild(neu("div", "monat-kopf", n)));
+  }
+
+  const gitter = el("monatGitter");
+  gitter.textContent = "";
+  const erster = monatsstart(MonatsAnker);
+  const start = wochenstart(erster);
+  const monat = ausIso(erster).getMonth();
+
+  for(let i = 0; i < 42; i++){
+    const tag = plusTage(start, i);
+    const dt = ausIso(tag);
+    if(i >= 35 && dt.getMonth() !== monat) break;
+    const z = neu("button", "mtag");
+    z.type = "button";
+    if(dt.getMonth() !== monat) z.classList.add("fremd");
+    if(tag === heute()) z.classList.add("ist");
+    if(tag === Anker) z.classList.add("gewählt");
+    z.setAttribute("aria-label", deDatum(tag, true));
+    z.appendChild(neu("div", "mtag-zahl", dt.getDate()));
+
+    const arten = [];
+    einträgeAm(tag).forEach(e => { if(arten.indexOf(e.art) < 0) arten.push(e.art); });
+    if(arten.length){
+      const p = neu("div", "punkte");
+      ART_FOLGE.filter(a => arten.indexOf(a) >= 0).forEach(a => p.appendChild(neu("span", "punkt p-" + a)));
+      z.appendChild(p);
+    }
+    z.addEventListener("click", () => { Anker = tag; zeichneMonat(); zeichneMonatsTag(); });
+    gitter.appendChild(z);
+  }
+  zeichneMonatsTag();
+}
+
+function zeichneMonatsTag(){
+  const ziel = el("monatTag");
+  ziel.textContent = "";
+  const liste = einträgeAm(Anker);
+  const a = abschnitt(deDatum(Anker, true));
+  if(!liste.length){
+    a._liste.appendChild(leerZustand("Nichts an diesem Tag", "Tippe auf das Plus, um etwas einzutragen."));
+  } else {
+    liste.forEach(e => a._liste.appendChild(zeileBauen(e)));
+  }
+  ziel.appendChild(a);
+}
+
+/* ---------- Aufgaben ---------- */
+function zeichneAufgaben(){
+  const ziel = el("aufgabenInhalt");
+  ziel.textContent = "";
+  const liste = aufgaben();
+  const offen = liste.filter(e => !e.erledigt);
+  const fertig = liste.filter(e => e.erledigt);
+
+  /* Überfällige Termine mit Datum, die noch offen sind */
+  const h = heute();
+  const versäumt = Daten.eintraege
+    .filter(e => !e.aufgabe && e.datum && e.datum < h && !e.erledigt)
+    .sort((a,b) => b.datum.localeCompare(a.datum))
+    .slice(0, 12);
+
+  if(versäumt.length){
+    const a = abschnitt("Offen geblieben", versäumt.length + "");
+    versäumt.forEach(e => a._liste.appendChild(zeileBauen(e, {datumZeigen:true, überfällig:true})));
+    ziel.appendChild(a);
+  }
+
+  if(offen.length){
+    const a = abschnitt("Aufgaben", offen.length + "");
+    offen.forEach(e => a._liste.appendChild(zeileBauen(e)));
+    ziel.appendChild(a);
+  }
+  if(fertig.length){
+    const a = abschnitt("Erledigt");
+    fertig.forEach(e => a._liste.appendChild(zeileBauen(e)));
+    ziel.appendChild(a);
+  }
+  if(!versäumt.length && !liste.length){
+    ziel.appendChild(leerZustand("Nichts offen",
+      "Aufgaben ohne festen Tag landen hier — und Termine, die du nicht abgehakt hast."));
+  }
+}
+
+/* ---------- Ansicht wechseln ---------- */
+function gleiterSetzen(){
+  const tabs = ["tabTag","tabWoche","tabMonat","tabAufgaben"];
+  const i = ["tag","woche","monat","aufgaben"].indexOf(Sicht);
+  const knopf = el(tabs[Math.max(0, i)]);
+  const g = el("gleiter");
+  if(!knopf || !g) return;
+  g.style.width = knopf.offsetWidth + "px";
+  g.style.transform = "translateX(" + (knopf.offsetLeft - 3) + "px)";
+}
+
+function sichtSetzen(name){
+  Sicht = name;
+  const paare = {tag:"sichtTag", woche:"sichtWoche", monat:"sichtMonat", aufgaben:"sichtAufgaben"};
+  Object.keys(paare).forEach(k => { el(paare[k]).hidden = (k !== name); });
+  const tabs = {tag:"tabTag", woche:"tabWoche", monat:"tabMonat", aufgaben:"tabAufgaben"};
+  Object.keys(tabs).forEach(k => el(tabs[k]).setAttribute("aria-selected", k === name ? "true" : "false"));
+  if(name === "woche") WochenAnker = wochenstart(Anker);
+  if(name === "monat") MonatsAnker = monatsstart(Anker);
+  gleiterSetzen();
+  zeichneAlles();
+  window.scrollTo({top:0, behavior:"instant"});
+}
+
+function kopfSetzen(){
+  const d = ausIso(Sicht === "woche" ? WochenAnker : (Sicht === "monat" ? MonatsAnker : Anker));
+  if(Sicht === "aufgaben"){
+    el("kopfMonat").textContent = "Aufgaben";
+  } else {
+    el("kopfMonat").innerHTML = "";
+    el("kopfMonat").appendChild(document.createTextNode(MONATE[d.getMonth()] + " "));
+    el("kopfMonat").appendChild(neu("i", null, d.getFullYear()));
+  }
+}
+
+function zeichneAlles(){
+  kopfSetzen();
+  if(Sicht === "tag") zeichneTag();
+  else if(Sicht === "woche") zeichneWoche();
+  else if(Sicht === "monat") zeichneMonat();
+  else zeichneAufgaben();
+}
+
+/* ---------- Meldung ---------- */
+let meldungsUhr = null;
+function melden(text){
+  const m = el("meldung");
+  m.textContent = text;
+  m.classList.add("auf");
+  clearTimeout(meldungsUhr);
+  meldungsUhr = setTimeout(() => m.classList.remove("auf"), 2600);
+}
+</script>

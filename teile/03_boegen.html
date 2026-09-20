@@ -1,0 +1,161 @@
+
+<div class="blende" id="blende"></div>
+
+<!-- ---------- Bogen: Eintrag ---------- -->
+<div class="bogen" id="bogenEintrag" role="dialog" aria-modal="true" aria-labelledby="eintragTitel">
+  <div class="griff"></div>
+  <div class="bogen-innen">
+    <div class="bogen-kopf">
+      <div class="bogen-titel" id="eintragTitel">Neuer Eintrag</div>
+      <button class="ikon" data-schliessen aria-label="Schließen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="art-wahl" id="artWahl">
+      <button class="art a-kraft"  data-art="kraft"  aria-pressed="true"><i></i>Kraft</button>
+      <button class="art a-lauf"   data-art="lauf"   aria-pressed="false"><i></i>Laufen</button>
+      <button class="art a-ba"     data-art="ba"     aria-pressed="false"><i></i>Bachelor&shy;arbeit</button>
+      <button class="art a-privat" data-art="privat" aria-pressed="false"><i></i>Uni &amp;&nbsp;Privat</button>
+    </div>
+
+    <div class="feld" style="margin-top:16px">
+      <label for="eTitel">Titel</label>
+      <input type="text" id="eTitel" placeholder="z. B. COLOSSUS Tag 1" autocomplete="off" enterkeyhint="done">
+    </div>
+
+    <div class="schalt-zeile" style="margin-top:6px">
+      <div class="schalt-text">Aufgabe ohne festen Tag
+        <small>Landet in der Aufgabenliste statt im Kalender</small>
+      </div>
+      <button class="kippe" id="kippeAufgabe" aria-pressed="false" aria-label="Aufgabe ohne festen Tag"></button>
+    </div>
+
+    <div id="datumBlock">
+      <div class="feld" style="margin-top:12px">
+        <label for="eDatum">Tag</label>
+        <input type="date" id="eDatum" class="mono-eingabe">
+      </div>
+
+      <div class="schalt-zeile">
+        <div class="schalt-text">Ohne Uhrzeit
+          <small>Für Training — nur dem Tag zugeordnet</small>
+        </div>
+        <button class="kippe" id="kippeGanztags" aria-pressed="true" aria-label="Ohne Uhrzeit"></button>
+      </div>
+
+      <div class="feldpaar" id="zeitBlock" hidden>
+        <div class="feld">
+          <label for="eVon">Von</label>
+          <input type="time" id="eVon" class="mono-eingabe">
+        </div>
+        <div class="feld">
+          <label for="eBis">Bis</label>
+          <input type="time" id="eBis" class="mono-eingabe">
+        </div>
+      </div>
+    </div>
+
+    <div class="feld" style="margin-top:12px">
+      <label for="eNotiz">Notiz</label>
+      <textarea id="eNotiz" rows="2" placeholder="optional"></textarea>
+    </div>
+
+    <button class="knopf" id="eSpeichern">Speichern</button>
+    <button class="knopf gefahr" id="eLöschen" hidden>Eintrag löschen</button>
+  </div>
+</div>
+
+<!-- ---------- Bogen: Tageswerte ---------- -->
+<div class="bogen" id="bogenWerte" role="dialog" aria-modal="true" aria-labelledby="werteTitel">
+  <div class="griff"></div>
+  <div class="bogen-innen">
+    <div class="bogen-kopf">
+      <div class="bogen-titel" id="werteTitel">Tageswerte</div>
+      <button class="ikon" data-schliessen aria-label="Schließen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="tag-monat" id="werteDatum" style="margin:-6px 0 14px">–</div>
+
+    <div class="feldpaar">
+      <div class="feld">
+        <label for="wGewicht">Gewicht (kg)</label>
+        <input type="text" inputmode="decimal" id="wGewicht" class="mono-eingabe" placeholder="73,5">
+      </div>
+      <div class="feld">
+        <label for="wPuls">Ruhepuls</label>
+        <input type="text" inputmode="numeric" id="wPuls" class="mono-eingabe" placeholder="52">
+      </div>
+    </div>
+    <div class="feldpaar">
+      <div class="feld">
+        <label for="wSchlaf">Schlaf (h)</label>
+        <input type="text" inputmode="decimal" id="wSchlaf" class="mono-eingabe" placeholder="7,5">
+      </div>
+      <div class="feld"></div>
+    </div>
+
+    <div class="regler">
+      <div class="regler-kopf">
+        <span class="regler-name">Anstrengung</span>
+        <span class="regler-wert" id="wRpeWert">–</span>
+      </div>
+      <div class="regler-stufe" id="wRpeStufe">noch nicht eingetragen</div>
+      <input type="range" id="wRpe" min="1" max="10" step="1" value="5" aria-label="Anstrengung 1 bis 10">
+    </div>
+
+    <div class="regler">
+      <div class="regler-kopf">
+        <span class="regler-name">Erholung</span>
+        <span class="regler-wert" id="wErhWert">–</span>
+      </div>
+      <div class="regler-stufe" id="wErhStufe">noch nicht eingetragen</div>
+      <input type="range" id="wErh" min="1" max="10" step="1" value="5" aria-label="Erholung 1 bis 10">
+    </div>
+
+    <div class="feld" style="margin-top:16px">
+      <label for="wNotiz">Notiz</label>
+      <textarea id="wNotiz" rows="2" placeholder="optional"></textarea>
+    </div>
+
+    <button class="knopf" id="wSpeichern">Werte speichern</button>
+  </div>
+</div>
+
+<!-- ---------- Bogen: Einstellungen ---------- -->
+<div class="bogen" id="bogenMehr" role="dialog" aria-modal="true" aria-labelledby="mehrTitel">
+  <div class="griff"></div>
+  <div class="bogen-innen">
+    <div class="bogen-kopf">
+      <div class="bogen-titel" id="mehrTitel">Einstellungen</div>
+      <button class="ikon" data-schliessen aria-label="Schließen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="feld">
+      <label for="schemaWahl">Darstellung</label>
+      <select id="schemaWahl">
+        <option value="system">Wie das Gerät</option>
+        <option value="hell">Immer hell</option>
+        <option value="dunkel">Immer dunkel</option>
+      </select>
+    </div>
+
+    <div class="abschnitt-kopf" style="margin-top:22px">Daten</div>
+    <button class="knopf still" id="knopfExport">Alles als Datei sichern</button>
+    <button class="knopf still" id="knopfImport">Aus Datei einlesen</button>
+    <input type="file" id="dateiWahl" accept="application/json" hidden>
+
+    <div class="abschnitt-kopf" style="margin-top:22px">Über</div>
+    <div style="font-size:13.5px; color:var(--tinte-3); line-height:1.6">
+      <div>Tagwerk · Fassung <span class="mono" id="fassungAnzeige">–</span></div>
+      <div id="speicherStand" style="margin-top:4px">–</div>
+      <div style="margin-top:10px">Die Daten liegen auf diesem Gerät. Sichere sie regelmäßig über den Knopf oben.</div>
+    </div>
+    <div style="height:14px"></div>
+  </div>
+</div>
+
+<div class="meldung" id="meldung" role="status" aria-live="polite"></div>

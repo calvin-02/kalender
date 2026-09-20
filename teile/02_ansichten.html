@@ -1,0 +1,74 @@
+
+  <main class="bühne">
+
+    <!-- ---------- Tagesansicht ---------- -->
+    <section id="sichtTag">
+      <div class="tag-kopf">
+        <div class="tag-zahl" id="tagZahl">–</div>
+        <div class="tag-neben">
+          <div class="tag-wochentag" id="tagWochentag">–</div>
+          <div class="tag-monat" id="tagMonat">–</div>
+        </div>
+        <div class="tag-blättern">
+          <button class="ikon" id="tagZurück" aria-label="Vorheriger Tag">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+          </button>
+          <button class="ikon" id="tagVor" aria-label="Nächster Tag">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="tagInhalt"></div>
+    </section>
+
+    <!-- ---------- Wochenansicht ---------- -->
+    <section id="sichtWoche" hidden>
+      <div class="woche-kopf">
+        <div class="woche-titel" id="wocheTitel">–</div>
+        <div class="tag-blättern">
+          <button class="ikon" id="wocheZurück" aria-label="Vorherige Woche">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+          </button>
+          <button class="ikon" id="wocheVor" aria-label="Nächste Woche">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="zähler" id="wocheZähler"></div>
+      <div id="wocheTage" style="margin-top:18px"></div>
+    </section>
+
+    <!-- ---------- Monatsansicht ---------- -->
+    <section id="sichtMonat" hidden>
+      <div class="woche-kopf">
+        <div class="woche-titel" id="monatTitel">–</div>
+        <div class="tag-blättern">
+          <button class="ikon" id="monatZurück" aria-label="Vorheriger Monat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+          </button>
+          <button class="ikon" id="monatVor" aria-label="Nächster Monat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="monat-gitter" id="monatKopf"></div>
+      <div class="monat-gitter" id="monatGitter"></div>
+      <div id="monatTag" style="margin-top:20px"></div>
+    </section>
+
+    <!-- ---------- Aufgaben ---------- -->
+    <section id="sichtAufgaben" hidden>
+      <div id="aufgabenInhalt" style="padding-top:18px"></div>
+    </section>
+
+  </main>
+
+  <div class="fuß">
+    <div class="fuß-innen">
+      <button class="plus" id="knopfNeu" aria-label="Neuer Eintrag">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </div>
+  </div>
+
+</div>

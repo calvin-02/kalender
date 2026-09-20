@@ -1,0 +1,173 @@
+
+<script>
+/* ============================================================
+   Tagwerk — Verdrahtung und Start
+   ============================================================ */
+
+/* ---------- Blättern ---------- */
+function blättern(richtung){
+  if(Sicht === "tag"){
+    Anker = plusTage(Anker, richtung);
+  } else if(Sicht === "woche"){
+    WochenAnker = plusTage(WochenAnker, richtung * 7);
+    Anker = WochenAnker;
+  } else if(Sicht === "monat"){
+    MonatsAnker = plusMonate(MonatsAnker, richtung);
+    Anker = MonatsAnker;
+  } else {
+    return;
+  }
+  zeichneAlles();
+}
+
+function zuHeute(){
+  Anker = heute();
+  WochenAnker = wochenstart(Anker);
+  MonatsAnker = monatsstart(Anker);
+  zeichneAlles();
+  stups(6);
+}
+
+/* ---------- Ereignisse ---------- */
+function verdrahten(){
+  el("tabTag").addEventListener("click", () => sichtSetzen("tag"));
+  el("tabWoche").addEventListener("click", () => sichtSetzen("woche"));
+  el("tabMonat").addEventListener("click", () => sichtSetzen("monat"));
+  el("tabAufgaben").addEventListener("click", () => sichtSetzen("aufgaben"));
+
+  el("tagZurück").addEventListener("click", () => blättern(-1));
+  el("tagVor").addEventListener("click", () => blättern(1));
+  el("wocheZurück").addEventListener("click", () => blättern(-1));
+  el("wocheVor").addEventListener("click", () => blättern(1));
+  el("monatZurück").addEventListener("click", () => blättern(-1));
+  el("monatVor").addEventListener("click", () => blättern(1));
+
+  el("knopfHeute").addEventListener("click", zuHeute);
+  el("knopfWerte").addEventListener("click", () => werteÖffnen(Anker));
+  el("knopfMehr").addEventListener("click", mehrÖffnen);
+  el("knopfNeu").addEventListener("click", eintragNeu);
+
+  el("blende").addEventListener("click", () => bogenSchließen());
+  document.querySelectorAll("[data-schliessen]").forEach(b => {
+    b.addEventListener("click", () => bogenSchließen());
+  });
+  document.addEventListener("keydown", ev => {
+    if(ev.key === "Escape" && offenerBogen) bogenSchließen();
+  });
+
+  document.querySelectorAll("#artWahl .art").forEach(b => {
+    b.addEventListener("click", () => { artSetzen(b.dataset.art); stups(5); });
+  });
+
+  el("kippeAufgabe").addEventListener("click", function(){
+    const an = !kippeAn("kippeAufgabe");
+    kippeSetzen("kippeAufgabe", an);
+    el("datumBlock").hidden = an;
+    stups(5);
+  });
+  el("kippeGanztags").addEventListener("click", function(){
+    const an = !kippeAn("kippeGanztags");
+    kippeSetzen("kippeGanztags", an);
+    el("zeitBlock").hidden = an;
+    stups(5);
+  });
+
+  el("eSpeichern").addEventListener("click", () => {
+    const e = eintragAusFormular();
+    if(!e) return;
+    eintragSichern(e);
+    bogenSchließen();
+    if(e.datum){ Anker = e.datum; if(Sicht === "woche") WochenAnker = wochenstart(Anker); }
+    zeichneAlles();
+    melden(bearbeiteId ? "Geändert" : "Eingetragen");
+    stups([10, 30, 10]);
+  });
+  el("eTitel").addEventListener("keydown", ev => {
+    if(ev.key === "Enter"){ ev.preventDefault(); el("eSpeichern").click(); }
+  });
+  el("eLöschen").addEventListener("click", () => {
+    if(!bearbeiteId) return;
+    eintragLöschen(bearbeiteId);
+    bogenSchließen();
+    zeichneAlles();
+    melden("Gelöscht");
+  });
+
+  reglerHorchen("wRpe", "wRpeWert", "wRpeStufe", RPE_STUFEN);
+  reglerHorchen("wErh", "wErhWert", "wErhStufe", ERH_STUFEN);
+  el("wSpeichern").addEventListener("click", werteSpeichern);
+
+  el("schemaWahl").addEventListener("change", function(){
+    Daten.einst.schema = this.value;
+    sichern();
+    schemaAnwenden();
+  });
+  el("knopfExport").addEventListener("click", exportieren);
+  el("knopfImport").addEventListener("click", () => el("dateiWahl").click());
+  el("dateiWahl").addEventListener("change", function(){
+    if(this.files && this.files[0]) importieren(this.files[0]);
+    this.value = "";
+  });
+
+  window.addEventListener("resize", gleiterSetzen);
+  window.addEventListener("orientationchange", () => setTimeout(gleiterSetzen, 180));
+
+  wischenEinrichten();
+}
+
+/* ---------- Wischen ---------- */
+function wischenEinrichten(){
+  const fläche = document.querySelector(".bühne");
+  let x0 = null, y0 = null, aktiv = false;
+
+  fläche.addEventListener("touchstart", ev => {
+    if(ev.touches.length !== 1 || offenerBogen){ x0 = null; return; }
+    x0 = ev.touches[0].clientX;
+    y0 = ev.touches[0].clientY;
+    aktiv = false;
+  }, {passive:true});
+
+  fläche.addEventListener("touchmove", ev => {
+    if(x0 === null) return;
+    const dx = ev.touches[0].clientX - x0;
+    const dy = ev.touches[0].clientY - y0;
+    if(!aktiv && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.6) aktiv = true;
+  }, {passive:true});
+
+  fläche.addEventListener("touchend", ev => {
+    if(x0 === null || !aktiv) { x0 = null; return; }
+    const dx = ev.changedTouches[0].clientX - x0;
+    x0 = null;
+    if(Math.abs(dx) < 55) return;
+    if(Sicht === "aufgaben") return;
+    blättern(dx < 0 ? 1 : -1);
+    stups(6);
+  }, {passive:true});
+}
+
+/* ---------- Dienstarbeiter ---------- */
+function dienstarbeiter(){
+  if(!("serviceWorker" in navigator)) return;
+  if(location.protocol === "file:") return;
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(e => console.warn("SW", e));
+  });
+}
+
+/* ---------- Start ---------- */
+(function start(){
+  laden();
+  schemaAnwenden();
+
+  Anker = heute();
+  WochenAnker = wochenstart(Anker);
+  MonatsAnker = monatsstart(Anker);
+
+  verdrahten();
+  sichtSetzen("tag");
+  requestAnimationFrame(gleiterSetzen);
+  dienstarbeiter();
+})();
+</script>
+</body>
+</html>
