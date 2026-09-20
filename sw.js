@@ -2,7 +2,7 @@
    Bei jeder Änderung an der App FASSUNG hochzählen — hier UND in teile/04_js_daten.html.
    Ohne diesen Schritt bleibt auf den Geräten die alte Fassung liegen. */
 
-const FASSUNG = "tagwerk-0.1.0";
+const FASSUNG = "tagwerk-0.1.1";
 const LAGER = "tagwerk-" + FASSUNG;
 
 const HÜLLE = [

@@ -80,7 +80,7 @@ function zeichneTag(){
     p.title = "Heute";
     el("tagWochentag").appendChild(p);
   }
-  el("tagMonat").textContent = MONATE[d.getMonth()] + " " + d.getFullYear() + " · KW " + kalenderwoche(Anker);
+  el("tagMonat").textContent = MON_KURZ[d.getMonth()] + " " + d.getFullYear() + " · KW " + kalenderwoche(Anker);
 
   const ziel = el("tagInhalt");
   ziel.textContent = "";
@@ -293,7 +293,7 @@ function gleiterSetzen(){
   const g = el("gleiter");
   if(!knopf || !g) return;
   g.style.width = knopf.offsetWidth + "px";
-  g.style.transform = "translateX(" + (knopf.offsetLeft - 3) + "px)";
+  g.style.transform = "translateX(" + knopf.offsetLeft + "px)";
 }
 
 function sichtSetzen(name){

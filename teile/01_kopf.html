@@ -93,7 +93,7 @@ button{font:inherit; color:inherit; border:0; background:none; cursor:pointer}
 }
 .schalter button[aria-selected="true"]{color:var(--tinte); font-weight:600}
 .gleiter{
-  position:absolute; top:3px; bottom:3px; border-radius:calc(var(--r) - 3px);
+  position:absolute; left:0; top:3px; bottom:3px; border-radius:calc(var(--r) - 3px);
   background:var(--blatt); box-shadow:0 1px 3px rgba(20,22,26,.13); z-index:1;
   transition:transform var(--takt), width var(--takt);
 }
@@ -108,11 +108,11 @@ button{font:inherit; color:inherit; border:0; background:none; cursor:pointer}
   font-family:"Instrument Serif",Georgia,serif; font-size:76px; line-height:.82;
   letter-spacing:-.02em; font-variant-numeric:lining-nums;
 }
-.tag-neben{padding-bottom:6px}
-.tag-wochentag{font-size:17px; font-weight:600; line-height:1.15}
+.tag-neben{padding-bottom:6px; min-width:0}
+.tag-wochentag{font-size:17px; font-weight:600; line-height:1.15; white-space:nowrap}
 .tag-monat{
-  font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.14em;
-  text-transform:uppercase; color:var(--tinte-3); margin-top:3px;
+  font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--tinte-3); margin-top:3px; white-space:nowrap;
 }
 .heute-punkt{
   display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--kraft);

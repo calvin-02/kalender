@@ -93,7 +93,7 @@ button{font:inherit; color:inherit; border:0; background:none; cursor:pointer}
 }
 .schalter button[aria-selected="true"]{color:var(--tinte); font-weight:600}
 .gleiter{
-  position:absolute; top:3px; bottom:3px; border-radius:calc(var(--r) - 3px);
+  position:absolute; left:0; top:3px; bottom:3px; border-radius:calc(var(--r) - 3px);
   background:var(--blatt); box-shadow:0 1px 3px rgba(20,22,26,.13); z-index:1;
   transition:transform var(--takt), width var(--takt);
 }
@@ -108,11 +108,11 @@ button{font:inherit; color:inherit; border:0; background:none; cursor:pointer}
   font-family:"Instrument Serif",Georgia,serif; font-size:76px; line-height:.82;
   letter-spacing:-.02em; font-variant-numeric:lining-nums;
 }
-.tag-neben{padding-bottom:6px}
-.tag-wochentag{font-size:17px; font-weight:600; line-height:1.15}
+.tag-neben{padding-bottom:6px; min-width:0}
+.tag-wochentag{font-size:17px; font-weight:600; line-height:1.15; white-space:nowrap}
 .tag-monat{
-  font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.14em;
-  text-transform:uppercase; color:var(--tinte-3); margin-top:3px;
+  font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--tinte-3); margin-top:3px; white-space:nowrap;
 }
 .heute-punkt{
   display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--kraft);
@@ -633,7 +633,7 @@ input[type=range]::-moz-range-thumb{
    ============================================================ */
 "use strict";
 
-const FASSUNG = "tagwerk-0.1.0";
+const FASSUNG = "tagwerk-0.1.1";
 const SCHLÜSSEL = "tagwerk.daten.v1";
 
 const ARTEN = {
@@ -648,6 +648,8 @@ const WOCHENTAGE = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freit
 const WT_KURZ    = ["So","Mo","Di","Mi","Do","Fr","Sa"];
 const MONATE = ["Januar","Februar","März","April","Mai","Juni",
                 "Juli","August","September","Oktober","November","Dezember"];
+const MON_KURZ = ["Jan","Feb","Mär","Apr","Mai","Jun",
+                  "Jul","Aug","Sep","Okt","Nov","Dez"];
 
 const RPE_STUFEN = ["","sehr leicht","leicht","locker","moderat","etwas fordernd",
                     "fordernd","hart","sehr hart","am Limit","maximal"];
@@ -867,7 +869,7 @@ function zeichneTag(){
     p.title = "Heute";
     el("tagWochentag").appendChild(p);
   }
-  el("tagMonat").textContent = MONATE[d.getMonth()] + " " + d.getFullYear() + " · KW " + kalenderwoche(Anker);
+  el("tagMonat").textContent = MON_KURZ[d.getMonth()] + " " + d.getFullYear() + " · KW " + kalenderwoche(Anker);
 
   const ziel = el("tagInhalt");
   ziel.textContent = "";
@@ -1080,7 +1082,7 @@ function gleiterSetzen(){
   const g = el("gleiter");
   if(!knopf || !g) return;
   g.style.width = knopf.offsetWidth + "px";
-  g.style.transform = "translateX(" + (knopf.offsetLeft - 3) + "px)";
+  g.style.transform = "translateX(" + knopf.offsetLeft + "px)";
 }
 
 function sichtSetzen(name){
