@@ -1,21 +1,24 @@
 
 <script>
 /* ============================================================
-   Tagwerk — Datenmodell, Speicher, Datumsrechnung
+   Kalender — Datenmodell, Speicher, Datumsrechnung
    Bei jeder Änderung FASSUNG hier UND in sw.js hochzählen.
    ============================================================ */
 "use strict";
 
-const FASSUNG = "tagwerk-0.1.1";
-const SCHLÜSSEL = "tagwerk.daten.v1";
+const FASSUNG = "kalender-0.2.0";
+const SCHLÜSSEL = "kalender.daten.v1";
+const ALT_SCHLÜSSEL = "tagwerk.daten.v1";   /* Stand vor der Umbenennung */
 
 const ARTEN = {
-  kraft:  {name:"Krafttraining",  kurz:"Kraft",   farbe:"var(--kraft)"},
-  lauf:   {name:"Laufen",         kurz:"Laufen",  farbe:"var(--lauf)"},
-  ba:     {name:"Bachelorarbeit", kurz:"BA",      farbe:"var(--ba)"},
-  privat: {name:"Uni & Privat",   kurz:"Privat",  farbe:"var(--privat)"}
+  kraft:    {name:"Krafttraining",  kurz:"Kraft",    farbe:"var(--kraft)"},
+  lauf:     {name:"Laufen",         kurz:"Laufen",   farbe:"var(--lauf)"},
+  ba:       {name:"Bachelorarbeit", kurz:"BA",       farbe:"var(--ba)"},
+  uni:      {name:"Uni",            kurz:"Uni",      farbe:"var(--uni)"},
+  gemeinde: {name:"Gemeinde",       kurz:"Gemeinde", farbe:"var(--gemeinde)"},
+  privat:   {name:"Privates",       kurz:"Privat",   farbe:"var(--privat)"}
 };
-const ART_FOLGE = ["kraft","lauf","ba","privat"];
+const ART_FOLGE = ["kraft","lauf","ba","uni","gemeinde","privat"];
 
 const WOCHENTAGE = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
 const WT_KURZ    = ["So","Mo","Di","Mi","Do","Fr","Sa"];
@@ -97,12 +100,20 @@ function neu(tag, klasse, text){
 /* ---------- Speicher ---------- */
 function laden(){
   try{
-    const roh = localStorage.getItem(SCHLÜSSEL);
+    let roh = localStorage.getItem(SCHLÜSSEL);
+    let ausAlt = false;
+    if(!roh){
+      roh = localStorage.getItem(ALT_SCHLÜSSEL);   /* einmalige Übernahme */
+      ausAlt = !!roh;
+    }
     if(!roh) return;
     const d = JSON.parse(roh);
     if(Array.isArray(d.eintraege)) Daten.eintraege = d.eintraege;
     if(d.werte && typeof d.werte === "object") Daten.werte = d.werte;
     if(d.einst && typeof d.einst === "object") Object.assign(Daten.einst, d.einst);
+    /* Unbekannte Kategorien auf Privates ziehen, damit nichts unsichtbar wird */
+    Daten.eintraege.forEach(e => { if(!ARTEN[e.art]) e.art = "privat"; });
+    if(ausAlt) sichern();
   }catch(e){ console.warn("Laden fehlgeschlagen", e); }
 }
 function sichern(){

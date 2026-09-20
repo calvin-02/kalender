@@ -1,9 +1,9 @@
-/* Tagwerk — Offline-Vorhaltung.
+/* Kalender — Offline-Vorhaltung.
    Bei jeder Änderung an der App FASSUNG hochzählen — hier UND in teile/04_js_daten.html.
    Ohne diesen Schritt bleibt auf den Geräten die alte Fassung liegen. */
 
-const FASSUNG = "tagwerk-0.1.1";
-const LAGER = "tagwerk-" + FASSUNG;
+const FASSUNG = "kalender-0.2.0";
+const LAGER = "kalender-" + FASSUNG;
 
 const HÜLLE = [
   "./",
@@ -27,7 +27,7 @@ self.addEventListener("activate", ev => {
   ev.waitUntil(
     caches.keys()
       .then(namen => Promise.all(
-        namen.filter(n => n.startsWith("tagwerk-") && n !== LAGER).map(n => caches.delete(n))
+        namen.filter(n => n.startsWith("kalender-") && n !== LAGER).map(n => caches.delete(n))
       ))
       .then(() => self.clients.claim())
   );

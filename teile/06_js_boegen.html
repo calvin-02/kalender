@@ -1,7 +1,7 @@
 
 <script>
 /* ============================================================
-   Tagwerk — Bögen: Eintrag anlegen und ändern, Werte, Einstellungen
+   Kalender — Bögen: Eintrag anlegen und ändern, Werte, Einstellungen
    ============================================================ */
 
 let offenerBogen = null;
@@ -186,7 +186,7 @@ function exportieren(){
   const blob = new Blob([inhalt], {type:"application/json"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "tagwerk-" + heute() + ".json";
+  a.download = "kalender-" + heute() + ".json";
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);

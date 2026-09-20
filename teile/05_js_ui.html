@@ -1,7 +1,7 @@
 
 <script>
 /* ============================================================
-   Tagwerk — Oberfläche: Ansichten zeichnen
+   Kalender — Oberfläche: Ansichten zeichnen
    ============================================================ */
 
 /* ---------- Eintragszeile ---------- */
@@ -322,6 +322,15 @@ function kopfSetzen(){
 
 function zeichneAlles(){
   kopfSetzen();
+  /* Der Kalenderknopf blasst ab, wenn du ohnehin auf heute stehst */
+  const aufHeute = (Sicht === "tag" && Anker === heute()) ||
+                   (Sicht === "woche" && WochenAnker === wochenstart(heute())) ||
+                   (Sicht === "monat" && MonatsAnker === monatsstart(heute()));
+  const kh = el("knopfHeute");
+  if(kh){
+    kh.classList.toggle("ist-heute", aufHeute && Sicht !== "aufgaben");
+    kh.setAttribute("title", aufHeute ? "Du bist auf heute" : "Zu heute springen");
+  }
   if(Sicht === "tag") zeichneTag();
   else if(Sicht === "woche") zeichneWoche();
   else if(Sicht === "monat") zeichneMonat();

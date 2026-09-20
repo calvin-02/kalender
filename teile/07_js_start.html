@@ -1,7 +1,7 @@
 
 <script>
 /* ============================================================
-   Tagwerk — Verdrahtung und Start
+   Kalender — Verdrahtung und Start
    ============================================================ */
 
 /* ---------- Blättern ---------- */
@@ -21,10 +21,15 @@ function blättern(richtung){
 }
 
 function zuHeute(){
+  const warSchon = (Sicht === "tag" && Anker === heute()) ||
+                   (Sicht === "woche" && WochenAnker === wochenstart(heute())) ||
+                   (Sicht === "monat" && MonatsAnker === monatsstart(heute()));
   Anker = heute();
   WochenAnker = wochenstart(Anker);
   MonatsAnker = monatsstart(Anker);
-  zeichneAlles();
+  if(Sicht === "aufgaben") sichtSetzen("tag"); else zeichneAlles();
+  /* Immer Rückmeldung geben — sonst wirkt der Knopf tot, wenn man schon hier ist */
+  melden(warSchon ? "Du bist auf heute" : deDatum(Anker, true));
   stups(6);
 }
 

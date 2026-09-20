@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f1f2f4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#131417" media="(prefers-color-scheme: dark)">
-<meta name="description" content="Tagwerk — Kalender für Training, Studium und Termine.">
-<title>Tagwerk</title>
+<meta name="description" content="Kalender für Training, Studium und Termine.">
+<title>Kalender</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
@@ -15,16 +15,20 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
 /* ============================================================
-   Tagwerk — Gestaltungssystem
+   Kalender — Gestaltungssystem
    Farben der Kategorien nach Okabe-Ito (farbfehlsichtigkeitssicher),
    für hellen Grund abgedunkelt, für dunklen Grund aufgehellt.
+   Bei sechs Kategorien trägt die Farbe nie allein: in der Maske steht
+   überall der Name daneben.
    ============================================================ */
 :root{
   --papier:#f1f2f4;  --blatt:#ffffff;  --senke:#e7e9ec;  --erhoben:#fafbfc;
   --rand:#d9dce1;    --rand-stark:#bcc1c9;
   --tinte:#14161a;   --tinte-2:#464c55;  --tinte-3:#7a818b;
-  --kraft:#c2571f;   --lauf:#00786b;     --ba:#0060a8;     --privat:#a34c86;
-  --kraft-f:#fae7dc; --lauf-f:#d6ecea;   --ba-f:#d9e8f6;   --privat-f:#f6e2ee;
+  --kraft:#c2571f;   --lauf:#00786b;   --ba:#0060a8;
+  --uni:#8a6d00;     --gemeinde:#9b4a8c; --privat:#5a6672;
+  --kraft-f:#fae7dc; --lauf-f:#d6ecea; --ba-f:#d9e8f6;
+  --uni-f:#f5ebcf;   --gemeinde-f:#f3e0ef; --privat-f:#e6e9ed;
   --gut:#2f7a48;     --warn:#95670f;     --kritisch:#a83329;
   --schatten:0 1px 2px rgba(20,22,26,.05), 0 10px 30px -18px rgba(20,22,26,.28);
   --r:10px; --r-gross:16px;
@@ -35,8 +39,10 @@
     --papier:#131417; --blatt:#1b1d21; --senke:#0e0f12; --erhoben:#23262b;
     --rand:#2a2d33;   --rand-stark:#414650;
     --tinte:#eef0f3;  --tinte-2:#aeb4bd;  --tinte-3:#7f858e;
-    --kraft:#f08b53;  --lauf:#3fb9a8;     --ba:#5ba8e8;     --privat:#d98ab8;
-    --kraft-f:#33200f;--lauf-f:#0b2e2a;   --ba-f:#0d2840;   --privat-f:#2f1728;
+    --kraft:#f08b53;  --lauf:#3fb9a8;     --ba:#5ba8e8;
+    --uni:#d4a83c;    --gemeinde:#d98ac8; --privat:#98a3b0;
+    --kraft-f:#33200f;--lauf-f:#0b2e2a;   --ba-f:#0d2840;
+    --uni-f:#2e2610;  --gemeinde-f:#2d1b29; --privat-f:#22262b;
     --gut:#5cb87a;    --warn:#d4a33e;     --kritisch:#e8776a;
     --schatten:0 1px 2px rgba(0,0,0,.5), 0 10px 30px -18px rgba(0,0,0,.8);
   }
@@ -45,8 +51,10 @@
   --papier:#131417; --blatt:#1b1d21; --senke:#0e0f12; --erhoben:#23262b;
   --rand:#2a2d33;   --rand-stark:#414650;
   --tinte:#eef0f3;  --tinte-2:#aeb4bd;  --tinte-3:#7f858e;
-  --kraft:#f08b53;  --lauf:#3fb9a8;     --ba:#5ba8e8;     --privat:#d98ab8;
-  --kraft-f:#33200f;--lauf-f:#0b2e2a;   --ba-f:#0d2840;   --privat-f:#2f1728;
+  --kraft:#f08b53;  --lauf:#3fb9a8;     --ba:#5ba8e8;
+  --uni:#d4a83c;    --gemeinde:#d98ac8; --privat:#98a3b0;
+  --kraft-f:#33200f;--lauf-f:#0b2e2a;   --ba-f:#0d2840;
+  --uni-f:#2e2610;  --gemeinde-f:#2d1b29; --privat-f:#22262b;
   --gut:#5cb87a;    --warn:#d4a33e;     --kritisch:#e8776a;
   --schatten:0 1px 2px rgba(0,0,0,.5), 0 10px 30px -18px rgba(0,0,0,.8);
 }
@@ -142,6 +150,8 @@ button{font:inherit; color:inherit; border:0; background:none; cursor:pointer}
 .k-kraft .balken{background:var(--kraft)}
 .k-lauf .balken{background:var(--lauf)}
 .k-ba .balken{background:var(--ba)}
+.k-uni .balken{background:var(--uni)}
+.k-gemeinde .balken{background:var(--gemeinde)}
 .k-privat .balken{background:var(--privat)}
 .zeile-mitte{min-width:0}
 .zeile-titel{font-size:15.5px; font-weight:500; line-height:1.3; word-break:break-word}
@@ -236,8 +246,9 @@ button{font:inherit; color:inherit; border:0; background:none; cursor:pointer}
 .mtag.gewählt{background:var(--senke); box-shadow:inset 0 0 0 1.5px var(--rand-stark)}
 .punkte{display:flex; gap:2.5px; flex-wrap:wrap; justify-content:center; max-width:100%}
 .punkt{width:5px; height:5px; border-radius:50%}
-.p-kraft{background:var(--kraft)} .p-lauf{background:var(--lauf)}
-.p-ba{background:var(--ba)} .p-privat{background:var(--privat)}
+.p-kraft{background:var(--kraft)}       .p-lauf{background:var(--lauf)}
+.p-ba{background:var(--ba)}             .p-uni{background:var(--uni)}
+.p-gemeinde{background:var(--gemeinde)} .p-privat{background:var(--privat)}
 
 /* ---------- Werte ---------- */
 .feldpaar{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px}
@@ -310,19 +321,24 @@ input[type=range]::-moz-range-thumb{
   padding:10px 0 14px; position:sticky; top:0; background:var(--blatt); z-index:2;
 }
 .bogen-titel{font-size:17px; font-weight:600}
-.art-wahl{display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-bottom:4px}
+.art-wahl{display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin-bottom:4px}
 .art{
-  padding:11px 4px 10px; border-radius:var(--r); border:1.5px solid var(--rand);
-  display:flex; flex-direction:column; align-items:center; gap:6px;
+  padding:10px 4px 9px; border-radius:var(--r); border:1.5px solid var(--rand);
+  display:flex; flex-direction:column; align-items:center; gap:5px;
   font-size:11.5px; font-weight:500; line-height:1.15; text-align:center; color:var(--tinte-2);
-  transition:all var(--takt); background:var(--blatt);
+  transition:all var(--takt); background:var(--blatt); min-height:56px; justify-content:center;
 }
-.art i{width:9px; height:9px; border-radius:50%; display:block}
+.art i{width:9px; height:9px; border-radius:50%; display:block; flex:none}
 .art[aria-pressed="true"]{border-color:currentColor; color:var(--tinte)}
-.art.a-kraft i{background:var(--kraft)}  .art.a-kraft[aria-pressed="true"]{background:var(--kraft-f); border-color:var(--kraft)}
-.art.a-lauf i{background:var(--lauf)}    .art.a-lauf[aria-pressed="true"]{background:var(--lauf-f); border-color:var(--lauf)}
-.art.a-ba i{background:var(--ba)}        .art.a-ba[aria-pressed="true"]{background:var(--ba-f); border-color:var(--ba)}
-.art.a-privat i{background:var(--privat)}.art.a-privat[aria-pressed="true"]{background:var(--privat-f); border-color:var(--privat)}
+.art.a-kraft i{background:var(--kraft)}      .art.a-kraft[aria-pressed="true"]{background:var(--kraft-f); border-color:var(--kraft)}
+.art.a-lauf i{background:var(--lauf)}        .art.a-lauf[aria-pressed="true"]{background:var(--lauf-f); border-color:var(--lauf)}
+.art.a-ba i{background:var(--ba)}            .art.a-ba[aria-pressed="true"]{background:var(--ba-f); border-color:var(--ba)}
+.art.a-uni i{background:var(--uni)}          .art.a-uni[aria-pressed="true"]{background:var(--uni-f); border-color:var(--uni)}
+.art.a-gemeinde i{background:var(--gemeinde)}.art.a-gemeinde[aria-pressed="true"]{background:var(--gemeinde-f); border-color:var(--gemeinde)}
+.art.a-privat i{background:var(--privat)}    .art.a-privat[aria-pressed="true"]{background:var(--privat-f); border-color:var(--privat)}
+
+/* Kalenderknopf: zeigt an, ob du schon auf heute stehst */
+.ikon.ist-heute{color:var(--tinte-3); opacity:.55}
 
 .knopf{
   width:100%; padding:14px; border-radius:var(--r); background:var(--tinte); color:var(--papier);
@@ -368,7 +384,7 @@ input[type=range]::-moz-range-thumb{
 
   <header class="kopf">
     <div class="kopf-zeile">
-      <h1 class="monat" id="kopfMonat">Tagwerk</h1>
+      <h1 class="monat" id="kopfMonat">Kalender</h1>
       <div class="kopf-knöpfe">
         <button class="ikon" id="knopfHeute" aria-label="Zu heute springen" title="Heute">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/><circle cx="12" cy="15" r="1.8" fill="currentColor" stroke="none"/></svg>
